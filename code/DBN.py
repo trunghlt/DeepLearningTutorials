@@ -240,15 +240,17 @@ class DBN(object):
                       self.y: train_set_y[index * batch_size:
                                           (index + 1) * batch_size]})
 
-        test_score_i = theano.function([index], self.errors,
-                 givens={self.x: test_set_x[index * batch_size:
-                                            (index + 1) * batch_size],
-                         self.y: test_set_y[index * batch_size:
-                                            (index + 1) * batch_size]})
+        if test_result_avail:
+            test_score_i = theano.function([index], self.errors,
+                     givens={self.x: test_set_x[index * batch_size:
+                                                (index + 1) * batch_size],
+                             self.y: test_set_y[index * batch_size:
+                                                (index + 1) * batch_size]})
 
-        test_classify = theano.function([index], self.labels,
-                 givens={self.x: test_set_x[index*batchsize:
-                                            (index + 1)*batch_size]},)
+        else:
+            test_classify = theano.function([index], self.labels,
+                     givens={self.x: test_set_x[index*batchsize:
+                                                (index + 1)*batch_size]},)
 
         valid_score_i = theano.function([index], self.errors,
               givens={self.x: valid_set_x[index * batch_size:
@@ -344,7 +346,8 @@ def test_DBN(finetune_lr=0.1, pretraining_epochs=100,
     print '... getting the finetuning functions'
     train_fn, validate_model, test_model = dbn.build_finetune_functions(
                 datasets=datasets, batch_size=batch_size,
-                learning_rate=finetune_lr)
+                learning_rate=finetune_lr,
+                test_result_avail=False)
 
     print '... finetunning the model'
     # early-stopping parameters
