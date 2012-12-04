@@ -137,6 +137,9 @@ class DBN(object):
         # minibatch given by self.x and self.y
         self.errors = self.logLayer.errors(self.y)
 
+        # Return classified lables
+        self.labels = self.logLayer.y_pred
+
     def pretraining_functions(self, train_set_x, batch_size, k):
         '''Generates a list of functions, for performing one step of
         gradient descent at a given layer. The function will require
@@ -185,7 +188,8 @@ class DBN(object):
 
         return pretrain_fns
 
-    def build_finetune_functions(self, datasets, batch_size, learning_rate):
+    def build_finetune_functions(self, datasets, batch_size, learning_rate,
+                                 test_result_avail=True):
         '''Generates a function `train` that implements one step of
         finetuning, a function `validate` that computes the error on a
         batch from the validation set, and a function `test` that
@@ -201,6 +205,10 @@ class DBN(object):
         :param batch_size: size of a minibatch
         :type learning_rate: float
         :param learning_rate: learning rate used during finetune stage
+        :type test_result_avail: boolean
+        :param test_result_avail: if test set label is available then the
+            function returns an error function for the test set, otherwise
+            it returns a function that returns labels from test data.
 
         '''
 
@@ -238,6 +246,10 @@ class DBN(object):
                          self.y: test_set_y[index * batch_size:
                                             (index + 1) * batch_size]})
 
+        test_classify = theano.function([index], self.labels,
+                 givens={self.x: test_set_x[index*batchsize:
+                                            (index + 1)*batch_size]},)
+
         valid_score_i = theano.function([index], self.errors,
               givens={self.x: valid_set_x[index * batch_size:
                                           (index + 1) * batch_size],
@@ -252,7 +264,8 @@ class DBN(object):
         def test_score():
             return [test_score_i(i) for i in xrange(n_test_batches)]
 
-        return train_fn, valid_score, test_score
+        return train_fn, valid_score,\
+               test_score if test_result_avail else test_classify
 
 
 def test_DBN(finetune_lr=0.1, pretraining_epochs=100,
